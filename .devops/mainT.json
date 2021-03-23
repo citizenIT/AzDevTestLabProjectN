@@ -1,0 +1,211 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "type": "string",
+      "defaultValue": "sampleProject",
+      "minLength": 3,
+      "maxLength": 20,
+      "metadata": {
+        "description": "Specify a project name that is used to generate resource names."
+      }
+    },
+    "env": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [ "dev", "prod", "qa", "staginng" ],
+      "metadata": {
+        "description": "description"
+      }
+    },
+    "costThreshold": {
+      "type": "int",
+      "defaultValue": 50
+    },
+    "maxAllowedVmsPerUser": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 0,
+      "metadata": {
+        "description": "The maximum number of VMs allowed per user."
+      }
+    },
+    "maxAllowedVmsPerLab": {
+      "type": "int",
+      "defaultValue": 10,
+      "minValue": 0,
+      "metadata": {
+        "description": "The maximum number of VMs allowed per lab."
+      }
+    },
+    "allowedVmSizes": {
+      "type": "string",
+      "defaultValue": "\"Standard_A1_v2\", \"Standard_A2_v2\", \"Standard_D2as_v4\"",
+      "minLength": 3,
+      "metadata": {
+        "description": "A comma-separated list of VM sizes that are allowed in the lab."
+      }
+    },
+    "allowedBaseImages": {
+      "type": "string",
+      "defaultValue": "\"{\\\"offer\\\":\\\"CentOS\\\",\\\"publisher\\\":\\\"OpenLogic\\\",\\\"sku\\\":\\\"8.0\\\",\\\"osType\\\":\\\"Linux\\\",\\\"version\\\":\\\"latest\\\"}\"",
+      "metadata": {
+        "description": "Allowed vm base images"
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Address prefix"
+      }
+    },
+    "subnet1Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/24",
+      "metadata": {
+        "description": "Subnet 1 Prefix"
+      }
+    },
+    "subnet2Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": {
+        "description": "Subnet 2 Prefix"
+      }
+    }
+  },
+  "variables": {
+    "default_tags": {
+      "project": "[parameters('projectName')]",
+      "env": "[parameters('env')]"
+    },
+
+    "vnetName": "[concat(parameters('projectName'),'-vnet')]",
+    "subnet1Name": "[concat(parameters('projectName'), '-snet1')]",
+    "subnet2Name": "[concat(parameters('projectName'), '-snet2')]",
+    "nsg1Name": "[concat(parameters('projectName'), '-nsg1')]",
+
+    "dtlDeploymenyName": "linkedTemplate-dtl",
+    "vnetDeploymenyName": "linkedTemplate-vnet",
+    "nsgDeploymenyName": "linkedTemplate-nsg"
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[variables('dtlDeploymenyName')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', variables('vnetDeploymenyName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "relativePath": "linkedT/dtlT.json"
+        },
+        "parameters": {
+          "projectName": {
+            "value": "[parameters('projectName')]"
+          },
+          "env": {
+            "value": "[parameters('env')]"
+          },
+          "costThreshold": {
+            "value": "[parameters('costThreshold')]"
+          },
+          "maxAllowedVmsPerUser": {
+            "value": "[parameters('maxAllowedVmsPerUser')]"
+          },
+          "maxAllowedVmsPerLab": {
+            "value": "[parameters('maxAllowedVmsPerLab')]"
+          },
+          "allowedVmSizes": {
+            "value": "[parameters('allowedVmSizes')]"
+          },
+          "allowedBaseImages": {
+            "value": "[parameters('allowedBaseImages')]"
+          },
+          "vnetName": {
+            "value": "[variables('vnetName')]"
+          },
+          "subnet1Name": {
+            "value": "[variables('subnet1Name')]"
+          },
+          "subnet2Name": {
+            "value": "[variables('subnet2Name')]"
+          }
+        }
+      },
+      "tags": "[variables('default_tags')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[variables('vnetDeploymenyName')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Resources/deployments', variables('nsgDeploymenyName'))]"
+      ],
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "relativePath": "linkedT/vnet.json"
+        },
+        "parameters": {
+          "projectName": {
+            "value": "[parameters('projectName')]"
+          },
+          "env": {
+            "value": "[parameters('env')]"
+          },
+          "vnetName": {
+            "value": "[variables('vnetName')]"
+          },
+          "vnetAddressPrefix": {
+            "value": "[parameters('vnetAddressPrefix')]"
+          },
+          "subnet1Name": {
+            "value": "[variables('subnet1Name')]"
+          },
+          "subnet1Prefix": {
+            "value": "[parameters('subnet1Prefix')]"
+          },
+          "subnet2Name": {
+            "value": "[variables('subnet2Name')]"
+          },
+          "subnet2Prefix": {
+            "value": "[parameters('subnet2Prefix')]"
+          },
+          "nsg1Name": {
+            "value": "[variables('nsg1Name')]"
+          }
+        }
+      },
+      "tags": "[variables('default_tags')]"
+    },
+    {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2020-10-01",
+      "name": "[variables('nsgDeploymenyName')]",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "relativePath": "linkedT/nsgT.json"
+        },
+        "parameters": {
+          "projectName": {
+            "value": "[parameters('projectName')]"
+          },
+          "env": {
+            "value": "[parameters('env')]"
+          },
+          "nsg1Name": {
+            "value": "[variables('nsg1Name')]"
+          }
+        }
+      },
+      "tags": "[variables('default_tags')]"
+    }
+  ],
+  "outputs": {}
+}

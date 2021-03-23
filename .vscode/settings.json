@@ -1,0 +1,13 @@
+{
+  "editor.tabSize": 2,
+  "diffEditor.ignoreTrimWhitespace": false,
+  "prettier.singleQuote": true,
+  "prettier.semi": false,
+  "editor.formatOnSave": true,
+  "[arm-template]": {
+    "editor.defaultFormatter": "msazurermtools.azurerm-vscode-tools"
+  },
+  "[yaml]": {
+    "editor.autoIndent": "full"
+  }
+}

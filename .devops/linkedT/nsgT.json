@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "defaultValue": "citizen-developer",
+      "type": "string",
+      "metadata": {
+        "description": "The name of the new lab instance to be created"
+      }
+    },
+    "env": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [ "dev", "prod", "qa", "staginng" ],
+      "metadata": {
+        "description": "description"
+      }
+    },
+    "nsg1Name": {
+      "type": "string",
+      "defaultValue": "nsg1",
+      "metadata": {
+        "description": "description"
+      }
+    }
+  },
+  "functions": [],
+  "variables": {
+    "default_tags": {
+      "project": "[parameters('projectName')]",
+      "env": "[parameters('env')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[parameters('nsg1Name')]",
+      "location": "[resourceGroup().location]",
+      "apiVersion": "2020-05-01",
+      "properties": {
+        "securityRules": []
+      },
+      "tags": "[variables('default_tags')]"
+    }
+  ],
+  "outputs": {}
+}

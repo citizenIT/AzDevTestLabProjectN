@@ -1,0 +1,227 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "defaultValue": "citizen-developer",
+      "type": "string",
+      "metadata": {
+        "description": "The name of the new lab instance to be created"
+      }
+    },
+    "env": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [ "dev", "prod", "qa", "staginng" ],
+      "metadata": {
+        "description": "description"
+      }
+    },
+    "costThreshold": {
+      "type": "int",
+      "defaultValue": 50
+
+    },
+    "maxAllowedVmsPerUser": {
+      "type": "int",
+      "defaultValue": 1,
+      "minValue": 0,
+      "metadata": {
+        "description": "The maximum number of VMs allowed per user."
+      }
+    },
+    "maxAllowedVmsPerLab": {
+      "type": "int",
+      "defaultValue": 10,
+      "minValue": 0,
+      "metadata": {
+        "description": "The maximum number of VMs allowed per lab."
+      }
+    },
+    "allowedVmSizes": {
+      "type": "string",
+      "defaultValue": "\"Standard_A1_v2\", \"Standard_A2_v2\", \"Standard_D2as_v4\"",
+      "minLength": 3,
+      "metadata": {
+        "description": "A comma-separated list of VM sizes that are allowed in the lab."
+      }
+    },
+    "allowedBaseImages": {
+      "type": "string",
+      "defaultValue": "\"{\\\"offer\\\":\\\"CentOS\\\",\\\"publisher\\\":\\\"OpenLogic\\\",\\\"sku\\\":\\\"8.0\\\",\\\"osType\\\":\\\"Linux\\\",\\\"version\\\":\\\"latest\\\"}\"",
+      "metadata": {
+        "description": "Allowed vm base images"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "sample-vnet",
+      "metadata": {
+        "description": "description"
+      }
+    },
+    "subnet1Name": {
+      "type": "string",
+      "defaultValue": "Subnet1",
+      "metadata": {
+        "description": "Subnet 1 Name"
+      }
+    },
+    "subnet2Name": {
+      "type": "string",
+      "defaultValue": "Subnet2",
+      "metadata": {
+        "description": "Subnet 2 Name"
+      }
+    }
+  },
+  "functions": [],
+  "variables": {
+    "default_tags": {
+      "project": "[parameters('projectName')]",
+      "env": "[parameters('env')]"
+    },
+    "location": "[resourceGroup().location]"
+  },
+  "resources": [
+    {
+      "name": "[parameters('projectName')]",
+      "type": "Microsoft.DevTestLab/labs",
+      "apiVersion": "2018-09-15",
+      "location": "[variables('location')]",
+      "tags": "[variables('default_tags')]",
+      "properties": {},
+      "resources": [
+        {
+          "apiVersion": "2018-09-15",
+          "name": "[parameters('vnetName')]",
+          "type": "virtualNetworks",
+          "dependsOn": [
+            "[resourceId('Microsoft.DevTestLab/labs', parameters('projectName'))]"
+          ],
+          "properties": {
+            "description": "Existing Compute virtual network associated as part of the lab creation process.",
+            "externalProviderResourceId": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+            "subnetOverrides": [
+              {
+                "resourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnet1Name'))]",
+                "useInVmCreationPermission": "Allow",
+                "usePublicIpAddressPermission": "Allow"
+              },
+              {
+                "resourceId": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('vnetName'), parameters('subnet2Name'))]",
+                "useInVmCreationPermission": "Allow",
+                "usePublicIpAddressPermission": "Allow"
+              }
+            ]
+          }
+        },
+        {
+          "apiVersion": "2018-09-15",
+          "name": "targetCost",
+          "type": "costs",
+          "tags": "[variables('default_tags')]",
+          "properties": {
+            "targetCost": {
+              "cycleType": "CalendarMonth",
+              "status": "Enabled",
+              "target": "[parameters('costThreshold')]",
+              "costThresholds": [
+                {
+                  "thresholdId": "dbf2ba58-cdb1-48ae-ac51-a6f9e29bc764",
+                  "displayOnChart": "Enabled",
+                  "sendNotificationWhenExceeded": "Enabled",
+                  "percentageThreshold": { "thresholdValue": 25 }
+                },
+                {
+                  "thresholdId": "5213d0a1-2327-4566-b66e-d1bb37427b96",
+                  "displayOnChart": "Enabled",
+                  "sendNotificationWhenExceeded": "Enabled",
+                  "percentageThreshold": { "thresholdValue": 50 }
+                },
+                {
+                  "thresholdId": "ef22bf22-597a-4e72-8673-1570ab7db86c",
+                  "displayOnChart": "Enabled",
+                  "sendNotificationWhenExceeded": "Enabled",
+                  "percentageThreshold": { "thresholdValue": 75 }
+                }
+              ]
+            }
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.DevTestLab/labs', parameters('projectName'))]"
+          ]
+        },
+        {
+          "type": "policySets/policies",
+          "name": "default/GalleryImage",
+          "apiVersion": "2018-09-15",
+          "location": "[variables('location')]",
+          "tags": "[variables('default_tags')]",
+          "properties": {
+            "description": "Allowed base images",
+            "status": "Enabled",
+            "factName": "GalleryImage",
+            "threshold": "[concat('[', trim(parameters('allowedBaseImages')), ']')]",
+            "evaluatorType": "AllowedValuesPolicy"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.DevTestLab/labs', parameters('projectName'))]"
+          ]
+        },
+        {
+          "type": "policySets/policies",
+          "name": "default/MaxVmsAllowedPerUser",
+          "apiVersion": "2018-09-15",
+          "location": "[variables('location')]",
+          "tags": "[variables('default_tags')]",
+          "properties": {
+            "description": "Maximum allowed VMs per user",
+            "status": "Enabled",
+            "factName": "UserOwnedLabVmCount",
+            "threshold": "[string(parameters('maxAllowedVmsPerUser'))]",
+            "evaluatorType": "MaxValuePolicy"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.DevTestLab/labs', parameters('projectName'))]"
+          ]
+        },
+        {
+          "type": "policySets/policies",
+          "name": "default/MaxVmsAllowedPerLab",
+          "apiVersion": "2018-09-15",
+          "location": "[variables('location')]",
+          "tags": "[variables('default_tags')]",
+          "properties": {
+            "description": "Maximum allowed VMs per lab",
+            "status": "Enabled",
+            "factName": "LabVmCount",
+            "threshold": "[string(parameters('maxAllowedVmsPerLab'))]",
+            "evaluatorType": "MaxValuePolicy"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.DevTestLab/labs', parameters('projectName'))]"
+          ]
+        },
+        {
+          "type": "policySets/policies",
+          "name": "default/AllowedVmSizesInLab",
+          "apiVersion": "2018-09-15",
+          "location": "[variables('location')]",
+          "tags": "[variables('default_tags')]",
+          "properties": {
+            "description": "Maximum allowed VMs sizes",
+            "status": "Enabled",
+            "factName": "LabVmSize",
+            "threshold": "[concat('[', trim(parameters('allowedVmSizes')), ']')]",
+            "evaluatorType": "AllowedValuesPolicy"
+          },
+          "dependsOn": [
+            "[resourceId('Microsoft.DevTestLab/labs', parameters('projectName'))]"
+          ]
+        }
+      ]
+    }
+  ],
+  "outputs": {}
+}

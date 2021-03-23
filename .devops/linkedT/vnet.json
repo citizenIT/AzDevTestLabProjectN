@@ -1,0 +1,130 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "projectName": {
+      "type": "string",
+      "defaultValue": "sampleProject",
+      "minLength": 3,
+      "maxLength": 20,
+      "metadata": {
+        "description": "Specify a project name that is used to generate resource names."
+      }
+    },
+    "env": {
+      "type": "string",
+      "defaultValue": "dev",
+      "allowedValues": [ "dev", "prod", "qa", "staginng" ],
+      "metadata": {
+        "description": "description"
+      }
+    },
+    "vnetName": {
+      "type": "string",
+      "defaultValue": "VNet1",
+      "metadata": {
+        "description": "VNet name"
+      }
+    },
+    "vnetAddressPrefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/16",
+      "metadata": {
+        "description": "Address prefix"
+      }
+    },
+    "subnet1Name": {
+      "type": "string",
+      "defaultValue": "Subnet1",
+      "metadata": {
+        "description": "Subnet 1 Name"
+      }
+    },
+    "subnet1Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.0.0/24",
+      "metadata": {
+        "description": "Subnet 1 Prefix"
+      }
+    },
+    "subnet2Name": {
+      "type": "string",
+      "defaultValue": "Subnet2",
+      "metadata": {
+        "description": "Subnet 2 Name"
+      }
+    },
+    "subnet2Prefix": {
+      "type": "string",
+      "defaultValue": "10.0.1.0/24",
+      "metadata": {
+        "description": "Subnet 2 Prefix"
+      }
+    },
+    "nsg1Name": {
+      "type": "string",
+      "defaultValue": "default-nsg",
+      "metadata": {
+        "description": "description"
+      }
+    }
+  },
+  "variables": {
+    "location": "[resourceGroup().location]",
+    "default_tags": {
+      "project": "[parameters('projectName')]",
+      "env": "[parameters('env')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2020-05-01",
+      "name": "[parameters('vnetName')]",
+      "location": "[variables('location')]",
+      "tags": "[variables('default_tags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[parameters('vnetAddressPrefix')]"
+          ]
+        }
+      },
+      "resources": [
+        {
+          "type": "subnets",
+          "apiVersion": "2020-05-01",
+          "location": "[variables('location')]",
+          "name": "[parameters('subnet1Name')]",
+          "dependsOn": [
+            "[parameters('vnetName')]"
+          ],
+          "properties": {
+            "networkSecurityGroup": {
+              "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg1Name'))]",
+              "location": "[variables('location')]"
+            },
+            "addressPrefix": "[parameters('subnet1Prefix')]"
+          }
+        },
+        {
+          "type": "subnets",
+          "apiVersion": "2020-05-01",
+          "location": "[variables('location')]",
+          "name": "[parameters('subnet2Name')]",
+          "dependsOn": [
+            "[parameters('vnetName')]",
+            "[parameters('subnet1Name')]"
+          ],
+          "properties": {
+            "networkSecurityGroup": {
+              "id": "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('nsg1Name'))]",
+              "location": "[variables('location')]"
+            },
+            "addressPrefix": "[parameters('subnet2Prefix')]"
+          }
+        }
+      ]
+    }
+  ]
+}
