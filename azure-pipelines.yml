@@ -10,19 +10,19 @@ pool:
   vmImage: ubuntu-latest
 
 variables:
-  - group: prod
+  - group: ProjectN
 
 steps:
   - task: AzureResourceManagerTemplateDeployment@3
     inputs:
       deploymentScope: 'Resource Group'
-      azureResourceManagerConnection: 'arm-rg-dtl-sc'
-      subscriptionId: '3ab0f28a-f137-4e85-9c80-8169c20ab6ad'
+      azureResourceManagerConnection: 'lk-customer-support-dtl-sc'
+      subscriptionId: '5f96bde1-56b4-48b1-9ec1-ed3f21a70196'
       action: 'Create Or Update Resource Group'
       resourceGroupName: '$(rgName)'
       location: 'East US 2'
       templateLocation: 'URL of the file'
-      csmFileLink: 'https://raw.githubusercontent.com/ArtiomLK/AzureDevTestLabARM/main/.devops/mainT.json'
+      csmFileLink: '$(templateLink)'
       overrideParameters: '-projectName $(projectName) -env $(env) -costThreshold $(costThreshold) -maxAllowedVmsPerUser $(maxAllowedVmsPerUser) -maxAllowedVmsPerLab $(maxAllowedVmsPerLab) -allowedVmSizes "$(allowedVmSizes)" -allowedBaseImages "$(allowedBaseImages)" -vnetAddressPrefix $(vnetAddressPrefix) -subnet1Prefix $(subnet1Prefix) -subnet2Prefix $(subnet2Prefix)'
       deploymentMode: 'Incremental'
       deploymentName: 'DeployDevTestLabARM'
